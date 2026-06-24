@@ -5,7 +5,6 @@ from collections.abc import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.error_handlers import register_exception_handlers
 from app.api.router import api_router
@@ -50,7 +49,9 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
-    if settings.metrics_enabled:
+    if settings.metrics_enabled and not settings.serverless_mode:
+        from prometheus_fastapi_instrumentator import Instrumentator
+
         Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
     @app.get("/health")

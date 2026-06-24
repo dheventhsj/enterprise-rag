@@ -1,6 +1,5 @@
-# Vercel serverless dependencies (no torch / sentence-transformers)
+# Vercel serverless — minimal footprint (OpenAI only, no local ML)
 fastapi==0.115.6
-uvicorn[standard]==0.34.0
 python-multipart==0.0.20
 sse-starlette==2.2.1
 
@@ -16,7 +15,6 @@ email-validator==2.2.0
 
 langchain-core==0.3.28
 langchain-openai==0.2.14
-langchain-google-genai==2.0.8
 langgraph==0.2.60
 openai==1.58.1
 
@@ -24,9 +22,6 @@ qdrant-client==1.12.1
 
 pypdf==5.1.0
 python-docx==1.1.2
-
-prometheus-client==0.21.1
-prometheus-fastapi-instrumentator==7.0.0
 
 httpx==0.28.1
 python-dotenv==1.0.1

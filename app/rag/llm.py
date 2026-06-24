@@ -3,7 +3,6 @@
 from collections.abc import AsyncIterator
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 
 from app.config.settings import Settings
@@ -29,6 +28,8 @@ class LLMService:
             )
         if not self._settings.gemini_api_key:
             raise ValidationError("GEMINI_API_KEY is not configured")
+        from langchain_google_genai import ChatGoogleGenerativeAI
+
         return ChatGoogleGenerativeAI(
             model=self._settings.gemini_model,
             google_api_key=self._settings.gemini_api_key,
