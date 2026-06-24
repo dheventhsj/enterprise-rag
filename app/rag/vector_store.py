@@ -27,6 +27,7 @@ class VectorStore:
             host=settings.qdrant_host,
             port=settings.qdrant_port,
             api_key=settings.qdrant_api_key,
+            check_compatibility=False,
         )
         self._collection = settings.qdrant_collection
         self._ensure_collection()

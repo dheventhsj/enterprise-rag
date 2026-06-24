@@ -112,13 +112,15 @@ def get_ingestion_service(
     settings: Settings = Depends(get_settings),
     storage: StorageBackend = Depends(get_storage_backend),
     parser_registry: DocumentParserRegistry = Depends(get_parser_registry),
+    embedding_service: EmbeddingService = Depends(get_embedding_service),
+    vector_store: VectorStore = Depends(get_vector_store),
 ) -> IngestionService:
     return IngestionService(
         settings=settings,
         storage=storage,
         parser_registry=parser_registry,
-        embedding_service=get_embedding_service(),
-        vector_store=get_vector_store(),
+        embedding_service=embedding_service,
+        vector_store=vector_store,
     )
 
 
@@ -127,13 +129,14 @@ def get_upload_service(
     storage: StorageBackend = Depends(get_storage_backend),
     ingestion_service: IngestionService = Depends(get_ingestion_service),
     settings: Settings = Depends(get_settings),
+    vector_store: VectorStore = Depends(get_vector_store),
 ) -> UploadService:
     return UploadService(
         document_repository=document_repository,
         storage=storage,
         ingestion_service=ingestion_service,
         settings=settings,
-        vector_store=get_vector_store(),
+        vector_store=vector_store,
     )
 
 

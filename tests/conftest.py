@@ -2,20 +2,7 @@
 
 import os
 
-import pytest
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
-
-from app.api.deps import get_ingestion_service, get_storage_backend
-from app.config.settings import get_settings
-from app.database.base import Base
-from app.database.session import get_db_session
-from app.main import create_app
-from app.services.ingestion_service import IngestionService
-from app.services.parsers.registry import DocumentParserRegistry
-from app.services.storage.base import LocalStorageBackend
-
+# Set test environment before importing application modules.
 TEST_SECRET = "test-secret-key-minimum-32-characters-long"
 TEST_DATABASE_URL = "sqlite+aiosqlite://"
 
@@ -24,6 +11,26 @@ os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 os.environ.setdefault("APP_ENV", "development")
 os.environ.setdefault("DEBUG", "true")
 os.environ.setdefault("UPLOAD_DIR", "test_uploads")
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
+
+from app.api.deps import (
+    get_embedding_service,
+    get_ingestion_service,
+    get_storage_backend,
+    get_vector_store,
+)
+from app.config.settings import get_settings
+from app.database.base import Base
+from app.database.session import get_db_session
+from app.main import create_app
+from app.services.ingestion_service import IngestionService
+from app.services.parsers.registry import DocumentParserRegistry
+from app.services.storage.base import LocalStorageBackend
+from tests.mocks import MockEmbeddingService, MockVectorStore
 
 get_settings.cache_clear()
 
@@ -85,12 +92,22 @@ async def client(test_db_engine, test_storage, tmp_path):
             storage=test_storage,
             parser_registry=DocumentParserRegistry(),
             session_factory=session_factory,
+            embedding_service=MockEmbeddingService(),
+            vector_store=MockVectorStore(),
         )
+
+    def override_vector_store():
+        return MockVectorStore()
+
+    def override_embedding_service():
+        return MockEmbeddingService()
 
     app = create_app()
     app.dependency_overrides[get_db_session] = override_get_db_session
     app.dependency_overrides[get_storage_backend] = override_storage_backend
     app.dependency_overrides[get_ingestion_service] = override_ingestion_service
+    app.dependency_overrides[get_vector_store] = override_vector_store
+    app.dependency_overrides[get_embedding_service] = override_embedding_service
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

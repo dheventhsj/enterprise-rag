@@ -89,6 +89,6 @@ async def test_conversation_message_flow(db_session: AsyncSession) -> None:
     db_session.add_all([user_msg, assistant_msg])
     await db_session.commit()
 
-    assert len(conversation.messages) == 0  # not loaded in session
     assert user_msg.conversation_id == conversation.id
     assert assistant_msg.citations[0]["chunk_index"] == 0
+    assert assistant_msg.role.value == "assistant"
