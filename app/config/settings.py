@@ -43,13 +43,20 @@ class Settings(BaseSettings):
     # Qdrant
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
+    qdrant_url: str | None = None
     qdrant_collection: str = "enterprise_rag_chunks"
     qdrant_api_key: str | None = None
 
     # Embeddings
+    embedding_provider: Literal["local", "openai"] = "local"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    openai_embedding_model: str = "text-embedding-3-small"
     embedding_dimension: int = 384
     embedding_batch_size: int = 32
+
+    # Serverless / Vercel
+    serverless_mode: bool = False
+    rate_limit_enabled: bool = True
 
     # LLM
     llm_provider: Literal["openai", "gemini"] = "openai"
@@ -96,6 +103,33 @@ class Settings(BaseSettings):
 
             return json.loads(value)
         return value
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, value: str) -> str:
+        """Ensure async SQLAlchemy driver prefix for Postgres URLs."""
+        url = value
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        # asyncpg does not support channel_binding query param from Neon pooler URLs
+        url = url.replace("channel_binding=require&", "").replace("&channel_binding=require", "")
+        url = url.replace("?channel_binding=require", "")
+        return url
+
+    def model_post_init(self, __context: object) -> None:
+        """Apply Vercel-specific defaults when running on serverless."""
+        import os
+
+        if os.getenv("VERCEL") == "1":
+            self.serverless_mode = True
+            self.upload_dir = "/tmp/uploads"
+            self.database_pool_size = 1
+            self.database_max_overflow = 0
+            if self.embedding_provider == "local":
+                self.embedding_provider = "openai"
+                self.embedding_dimension = 1536
 
     @property
     def max_upload_size_bytes(self) -> int:

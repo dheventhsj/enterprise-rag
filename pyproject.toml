@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "Production-grade Enterprise RAG Platform"
 requires-python = ">=3.12"
 
+[tool.vercel]
+entrypoint = "app.main:app"
+
 [tool.black]
 line-length = 100
 target-version = ["py312"]

@@ -69,7 +69,10 @@ class UploadService:
             },
         )
 
-        background_tasks.add_task(self._ingestion.process_document, document.id)
+        if self._settings.serverless_mode:
+            await self._ingestion.process_document(document.id)
+        else:
+            background_tasks.add_task(self._ingestion.process_document, document.id)
         logger.info(
             "Document uploaded",
             extra={

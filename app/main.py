@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Startup and shutdown lifecycle hooks."""
     settings = get_settings()
     setup_logging(settings)
-    if settings.app_env == "development":
+    if settings.app_env == "development" or settings.serverless_mode:
         await init_db(settings)
     yield
     await close_db()
@@ -44,7 +44,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(RateLimitMiddleware)
+    if settings.rate_limit_enabled and not settings.serverless_mode:
+        app.add_middleware(RateLimitMiddleware)
 
     register_exception_handlers(app)
     app.include_router(api_router, prefix=settings.api_v1_prefix)

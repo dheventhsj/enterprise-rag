@@ -44,3 +44,5 @@ models/
 
 # Docker volumes
 docker/volumes/
+.vercel
+.env*

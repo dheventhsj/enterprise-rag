@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import Settings, get_settings
 from app.database.session import get_db_session
-from app.rag.embeddings import EmbeddingService
+from app.rag.embeddings_factory import create_embedding_service
 from app.rag.llm import LLMService
 from app.rag.pipeline import RAGPipeline
 from app.rag.reranker import Reranker
@@ -77,8 +77,8 @@ def get_parser_registry() -> DocumentParserRegistry:
 
 
 @lru_cache
-def get_embedding_service() -> EmbeddingService:
-    return EmbeddingService(get_settings())
+def get_embedding_service():
+    return create_embedding_service(get_settings())
 
 
 @lru_cache
@@ -112,7 +112,7 @@ def get_ingestion_service(
     settings: Settings = Depends(get_settings),
     storage: StorageBackend = Depends(get_storage_backend),
     parser_registry: DocumentParserRegistry = Depends(get_parser_registry),
-    embedding_service: EmbeddingService = Depends(get_embedding_service),
+    embedding_service=Depends(get_embedding_service),
     vector_store: VectorStore = Depends(get_vector_store),
 ) -> IngestionService:
     return IngestionService(

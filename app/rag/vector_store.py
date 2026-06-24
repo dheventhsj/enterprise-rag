@@ -23,27 +23,37 @@ class VectorStore:
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self._client = QdrantClient(
-            host=settings.qdrant_host,
-            port=settings.qdrant_port,
-            api_key=settings.qdrant_api_key,
-            check_compatibility=False,
-        )
+        if settings.qdrant_url:
+            self._client = QdrantClient(
+                url=settings.qdrant_url,
+                api_key=settings.qdrant_api_key,
+                check_compatibility=False,
+            )
+        else:
+            self._client = QdrantClient(
+                host=settings.qdrant_host,
+                port=settings.qdrant_port,
+                api_key=settings.qdrant_api_key,
+                check_compatibility=False,
+            )
         self._collection = settings.qdrant_collection
         self._ensure_collection()
 
     def _ensure_collection(self) -> None:
         """Create collection if it does not exist."""
-        collections = {c.name for c in self._client.get_collections().collections}
-        if self._collection not in collections:
-            self._client.create_collection(
-                collection_name=self._collection,
-                vectors_config=VectorParams(
-                    size=self._settings.embedding_dimension,
-                    distance=Distance.COSINE,
-                ),
-            )
-            logger.info("Created Qdrant collection: %s", self._collection)
+        try:
+            collections = {c.name for c in self._client.get_collections().collections}
+            if self._collection not in collections:
+                self._client.create_collection(
+                    collection_name=self._collection,
+                    vectors_config=VectorParams(
+                        size=self._settings.embedding_dimension,
+                        distance=Distance.COSINE,
+                    ),
+                )
+                logger.info("Created Qdrant collection: %s", self._collection)
+        except Exception as exc:
+            logger.warning("Qdrant collection setup skipped: %s", exc)
 
     def upsert_vectors(
         self,

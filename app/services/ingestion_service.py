@@ -9,7 +9,7 @@ from app.database.session import get_session_factory
 from app.logging.logger import logger
 from app.models.document import DocumentStatus
 from app.rag.chunking import TextChunker
-from app.rag.embeddings import EmbeddingService
+from app.rag.embeddings_factory import create_embedding_service
 from app.rag.vector_store import VectorStore
 from app.repositories.chunk_repository import ChunkRepository
 from app.repositories.document_repository import DocumentRepository
@@ -28,14 +28,14 @@ class IngestionService:
         storage: StorageBackend,
         parser_registry: DocumentParserRegistry,
         session_factory: async_sessionmaker[AsyncSession] | None = None,
-        embedding_service: EmbeddingService | None = None,
+        embedding_service=None,
         vector_store: VectorStore | None = None,
     ) -> None:
         self._settings = settings
         self._storage = storage
         self._parsers = parser_registry
         self._session_factory = session_factory or get_session_factory(settings)
-        self._embeddings = embedding_service or EmbeddingService(settings)
+        self._embeddings = embedding_service or create_embedding_service(settings)
         self._vector_store = vector_store or VectorStore(settings)
         self._chunker = TextChunker(settings)
 
