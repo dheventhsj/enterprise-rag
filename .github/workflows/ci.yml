@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-test-build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: rag
+          POSTGRES_PASSWORD: ragpassword
+          POSTGRES_DB: enterprise_rag_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SECRET_KEY: ci-secret-key-minimum-32-characters-long
+      DATABASE_URL: postgresql+asyncpg://rag:ragpassword@localhost:5432/enterprise_rag_test
+      APP_ENV: development
+      DEBUG: "true"
+      UPLOAD_DIR: test_uploads
+      OPENAI_API_KEY: sk-test
+      LLM_PROVIDER: openai
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Lint with Ruff
+        run: ruff check app tests
+
+      - name: Format check with Black
+        run: black --check app tests
+
+      - name: Type check with Mypy
+        run: mypy app || true
+
+      - name: Run tests
+        run: pytest tests/ -v --cov=app --cov-report=term-missing
+
+      - name: Build Docker image
+        run: docker build -f docker/Dockerfile -t enterprise-rag:ci .
